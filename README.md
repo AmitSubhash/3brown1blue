@@ -59,7 +59,7 @@ pip install manim          # Manim Community Edition
 ### Install
 
 ```bash
-git clone https://github.com/AmitSubhash/claude-code-manim-skill ~/.claude/skills/manim
+git clone https://github.com/AmitSubhash/3brown1blue ~/.claude/skills/manim
 ```
 
 That's it. Claude Code auto-discovers skills in `~/.claude/skills/`.
