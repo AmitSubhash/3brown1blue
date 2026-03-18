@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/header.png" width="100%" alt="Claude Code Manim Skill">
-</p>
-
 <h2 align="center"><b>Describe It. Claude Animates It. 3Blue1Brown Quality.</b></h2>
 
 <p align="center">
@@ -120,6 +116,10 @@ manim -pqk scene.py MyScene    # 4K
 ---
 
 ## How It Works
+
+<p align="center">
+  <img src="assets/header.png" width="80%" alt="How 3brown1blue works">
+</p>
 
 ```
                     ┌─────────────────────────────────────────────────────┐
