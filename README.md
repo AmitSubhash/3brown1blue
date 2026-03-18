@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/3brown1blue/"><img src="https://img.shields.io/pypi/v/3brown1blue?color=blue&logo=pypi&logoColor=white" alt="PyPI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"></a>
   <a href="https://docs.manim.community"><img src="https://img.shields.io/badge/Manim_CE-v0.20%2B-6B8FD6?logo=python&logoColor=white" alt="Manim v0.20+"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+"></a>
@@ -21,13 +22,13 @@
 
 ---
 
-## One Command. One Video.
+## One Line. One Video.
 
-```
-> Animate the derivation of the Euler identity in 3Blue1Brown style
+```bash
+pip install 3brown1blue && 3brown1blue generate "the forward diffusion process"
 ```
 
-Claude reads the rules, writes safe Manim code, renders, and returns a video. No Manim experience required.
+Or install the skill into your AI coding assistant and just ask in natural language. No Manim experience required.
 
 ---
 
@@ -35,10 +36,15 @@ Claude reads the rules, writes safe Manim code, renders, and returns a video. No
 
 **You describe it. Claude animates it.**
 
-Drop this skill into `~/.claude/skills/` and Claude becomes a production-capable Manim developer. It writes correct Manim code on the first try because it has 21 rule files encoding the full API surface, 12 crash-prevention patterns, and 22 visual design recipes extracted from 422 analyzed 3Blue1Brown frames.
+`3brown1blue` is a CLI tool + AI coding skill that generates 3Blue1Brown-style Manim videos. It works two ways:
+
+1. **Standalone CLI** -- `3brown1blue generate "your topic"` creates a Manim scene using any LLM provider
+2. **AI Skill** -- install into Claude Code, Cursor, Windsurf, or GitHub Copilot and just ask in natural language
+
+The skill encodes 21 rule files, 12 crash-prevention patterns, and 22 visual design recipes extracted from 422 analyzed 3Blue1Brown frames.
 
 <table>
-<tr><td><b>Input</b></td><td><code>"Explain attention mechanisms visually"</code></td><td>Natural language prompt to Claude Code</td></tr>
+<tr><td><b>Input</b></td><td><code>"Explain attention mechanisms visually"</code></td><td>Natural language prompt or CLI command</td></tr>
 <tr><td><b>Output</b></td><td><code>scene.py</code> + <code>MyScene.mp4</code></td><td>Correct Manim code + rendered 1080p video</td></tr>
 <tr><td><b>Safety Net</b></td><td><code>safe_manim.py</code></td><td>Drop-in wrappers that prevent 6 known Manim crashes</td></tr>
 <tr><td><b>Templates</b></td><td><code>style.py</code>, <code>equation_explainer.py</code>, <code>paper_explainer.py</code></td><td>Ready-to-customize scaffolds for common video types</td></tr>
@@ -56,13 +62,42 @@ pip install manim          # Manim Community Edition
 # Also needed: LaTeX (TeX Live / MacTeX) + ffmpeg
 ```
 
-### Install
+### Option 1: pip install (recommended)
+
+```bash
+pip install 3brown1blue
+```
+
+**Generate a video directly:**
+
+```bash
+3brown1blue generate "how matrix multiplication works"
+```
+
+**Install the skill into your AI editor:**
+
+```bash
+3brown1blue install --target claude-code    # Claude Code
+3brown1blue install --target cursor         # Cursor
+3brown1blue install --target windsurf       # Windsurf
+3brown1blue install --target copilot        # GitHub Copilot
+```
+
+**Manage your installation:**
+
+```bash
+3brown1blue status       # show what's installed
+3brown1blue update       # update to latest version
+3brown1blue uninstall    # remove the skill
+```
+
+### Option 2: git clone
 
 ```bash
 git clone https://github.com/AmitSubhash/3brown1blue ~/.claude/skills/manim
 ```
 
-That's it. Claude Code auto-discovers skills in `~/.claude/skills/`.
+Claude Code auto-discovers skills in `~/.claude/skills/`.
 
 ### Use
 
