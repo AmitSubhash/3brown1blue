@@ -115,11 +115,13 @@ manim -pqk scene.py MyScene    # 4K
 
 ---
 
-## How It Works
-
 <p align="center">
-  <img src="assets/header.png" width="80%" alt="How 3brown1blue works">
+  <img src="assets/header.png" width="100%" alt="3brown1blue banner">
 </p>
+
+---
+
+## How It Works
 
 ```
                     ┌─────────────────────────────────────────────────────┐
@@ -278,6 +280,14 @@ my_video/
 `style.py` defines semantic colors (`primary`, `secondary`, `accent`), font sizes (`TITLE_SIZE`, `BODY_SIZE`, `EQ_SIZE`), timing constants (`HOLD_SHORT`, `HOLD_LONG`), and reusable components (`labeled_box()`, `section_title()`).
 
 **Why this matters:** Viewers learn the visual vocabulary. "Blue = input" carries between scenes. Consistency is what separates a tutorial from a 3Blue1Brown video.
+
+---
+
+## Acknowledgments
+
+This project exists because of [Grant Sanderson](https://x.com/3blue1brown) and [3Blue1Brown](https://www.youtube.com/c/3blue1brown). Grant didn't just make math videos -- he showed an entire generation that mathematical intuition can be built visually, that the right animation at the right moment can make a concept click in a way that no textbook ever could. His work with [Manim](https://github.com/3b1b/manim) proved that programmatic animation is a legitimate medium for serious mathematical communication, and the open-source community he inspired built [Manim Community Edition](https://www.manim.community/) so the rest of us could try.
+
+This skill is an attempt to lower the barrier further: if you have an idea worth animating, you shouldn't need to learn Manim first. But the visual design principles, the pacing instincts, the "geometry before algebra" philosophy -- that's all Grant's. We studied 422 frames of his videos to extract the patterns encoded in this skill. The quality bar is his. We're just trying to make it accessible.
 
 ---
 
