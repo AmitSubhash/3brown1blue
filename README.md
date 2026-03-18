@@ -137,46 +137,6 @@ manim -pqk scene.py MyScene    # 4K
 
 ---
 
-## The 12 Gotchas
-
-These are the crashes and silent bugs Claude catches automatically.
-
-<details>
-<summary><b>6 Crashes Prevented</b> (click to expand)</summary>
-
-| # | Bug | Fix |
-|---|-----|-----|
-| 1 | `Create(Text(...))` traces outlines instead of writing | Use `Write()` for text |
-| 2 | `Arrow(color=interpolate_color(...))` crashes | Use a plain color constant, adjust opacity separately |
-| 3 | `brace.get_text("label", font_size=24)` crashes | Create `Tex` separately, use `brace.put_at_tip()` |
-| 4 | `MathTex(r"$E=mc^2$")` crashes | MathTex is already math mode -- drop the `$` |
-| 5 | `LaggedStartMap(Write, group)` crashes on Text | Use `LaggedStart(*[Write(m) for m in group])` |
-| 6 | Updaters freeze during `self.wait()` | Add `frozen_frame=False` |
-
-</details>
-
-<details>
-<summary><b>6 Silent Bugs Caught</b> (click to expand)</summary>
-
-| # | Bug | Fix |
-|---|-----|-----|
-| 1 | `Transform(A, B)` then animating B does nothing | B was never added -- use `ReplacementTransform` |
-| 2 | Chained `Transform(a,b)` then `Transform(a,c)` loses b | a is still the scene object -- use `ReplacementTransform` each step |
-| 3 | `.animate.shift(R).scale(2)` != `.animate.scale(2).shift(R)` | Chain order matters after scaling |
-| 4 | `get_part_by_tex("missing")` returns None silently | Check before calling `.set_color()` on result |
-| 5 | `reference = mob` shares the same object | Use `mob.copy()` for independent objects |
-| 6 | Transparent background with mp4 | mp4 has no alpha -- use `--format webm -t` |
-
-</details>
-
-`safe_manim.py` provides drop-in wrappers for all 6 crash cases:
-
-```python
-from safe_manim import safe_arrow, safe_brace_label, safe_lagged_write, safe_get_part
-```
-
----
-
 ## Design Philosophy
 
 This skill encodes visual explanation principles from three masters:
@@ -283,29 +243,6 @@ my_video/
 `style.py` defines semantic colors (`primary`, `secondary`, `accent`), font sizes (`TITLE_SIZE`, `BODY_SIZE`, `EQ_SIZE`), timing constants (`HOLD_SHORT`, `HOLD_LONG`), and reusable components (`labeled_box()`, `section_title()`).
 
 **Why this matters:** Viewers learn the visual vocabulary. "Blue = input" carries between scenes. Consistency is what separates a tutorial from a 3Blue1Brown video.
-
----
-
-## Example Output
-
-| Project | Scenes | Topic |
-|---------|--------|-------|
-| [manim-attention](https://github.com/AmitSubhash/manim-attention) | 5 | Self-attention, QKV decomposition, softmax |
-| manim-lie-algebra | 6 | Lie groups, exponential map, geometry-first derivation |
-
----
-
-## Testing
-
-**32 scenes rendered successfully across 6 rounds of testing** covering:
-- Basic mobjects, text, equations
-- 3D surfaces and camera movement
-- ValueTracker sliders and updaters
-- Multi-scene projects with shared style.py
-- Edge cases from all 12 gotchas
-- Paper explainer scaffold
-
-Environment: Manim Community v0.20.1, LaTeX (pdfTeX), ffmpeg, macOS.
 
 ---
 
