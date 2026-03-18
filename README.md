@@ -1,4 +1,4 @@
-<h2 align="center"><b>Describe It. Claude Animates It. 3Blue1Brown Quality.</b></h2>
+<h2 align="center"><b>Describe It. Animate it. 3Blue1Brown Quality.</b></h2>
 
 <p align="center">
   <b><i>A Claude Code skill that turns natural language into production Manim videos.</i></b>
