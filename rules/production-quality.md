@@ -210,7 +210,85 @@ When delegating scene writing to subagents, the prompt MUST include:
 14. Content fills >= 50% of the frame (no large dead zones)
 15. Data viz bars/dots/lines meet minimum size and opacity thresholds
 
-## 8. Post-Render Checklist
+## 8. Dimming on Dark Backgrounds
+
+**Rule: DIM_OPACITY = 0.1, never 0.3**
+
+On dark backgrounds (#1e1e2e or similar), elements at 0.3 opacity still compete with primary content. Use 0.1 for aggressive dimming that actually works.
+
+```python
+DIM_OPACITY = 0.1  # 0.3 is too visible on dark backgrounds
+
+def dim_mob(scene, *mobs, opacity=DIM_OPACITY):
+    scene.play(*[m.animate.set_opacity(opacity) for m in mobs], run_time=0.5)
+```
+
+When even 0.1 is too much, use `FadeOut` instead of dimming.
+
+## 9. Text Width Enforcement
+
+Manim has NO auto-wrap. Long text will overflow the screen silently.
+
+**Rule: Break all text manually with `\n`**
+```python
+# BAD: will overflow right edge
+Text("This is a very long sentence that explains a complex mathematical concept")
+
+# GOOD: manually broken
+Text("This is a very long sentence\nthat explains a complex\nmathematical concept")
+```
+
+**Rule: Use safe_text() for all body text**
+```python
+def safe_text(text: str, max_width: float = 12.0, **kwargs) -> Text:
+    t = Text(text, **kwargs)
+    if t.width > max_width:
+        t.scale_to_fit_width(max_width)
+    return t
+```
+
+**Rule: Labels near mobjects use font_size <= 18 and short strings (< 30 chars)**
+
+## 10. Only Animate What Visualizes Well
+
+**Rule: If a concept needs explanation before the viewer can understand what they're looking at, choose a different visual.**
+
+Good visuals (self-explanatory):
+- Long division showing remainder cycles
+- Polygons converging to a circle
+- Function plots with shaded areas
+- Number lines with marked points
+- Side-by-side comparisons
+
+Bad visuals (require narration to decode):
+- Abstract coordinate mappings the viewer hasn't seen before
+- Wrapping a number line around a circle to "show" irrationality
+- Phase space diagrams without buildup
+- Any visualization where the axes need explaining first
+
+The test: "Would a first-time viewer understand this visual within 3 seconds of seeing it?"
+
+## 11. Scene Transitions
+
+**Rule: Add connective tissue between scenes**
+```python
+# Bridge text between scenes
+def bridge(scene, text, wait=2.0):
+    t = Text(text, font_size=28, color=YELLOW)
+    scene.play(FadeIn(t, shift=UP * 0.3))
+    scene.wait(wait)
+    scene.play(FadeOut(t, shift=UP * 0.3))
+```
+
+Use bridge text at act boundaries ("But what does irrational actually mean?") to prevent abrupt jumps.
+
+**Rule: End every scene with fade_all()**
+```python
+def fade_all(scene, run_time=0.8):
+    scene.play(*[FadeOut(m) for m in scene.mobjects], run_time=run_time)
+```
+
+## 12. Post-Render Checklist
 
 1. No text overlapping other text
 2. No text overlapping graphical elements
