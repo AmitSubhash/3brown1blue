@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/header.gif" width="100%" alt="3brown1blue animated banner">
+</p>
+
 <h2 align="center"><b>Describe It. Animate it. 3Blue1Brown Quality.</b></h2>
 
 <p align="center">
