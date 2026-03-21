@@ -83,8 +83,8 @@ Load the relevant rule file for the task at hand. Claude should read only what i
 - [rules/moving-camera.md](rules/moving-camera.md) -- MovingCameraScene, zoom, pan, follow
 
 ### Visual Design (read for any explainer video)
-- [rules/visual-design-principles.md](rules/visual-design-principles.md) -- **12 core principles** from Tufte, Bret Victor, 3Blue1Brown: opacity layering, persistent context, geometry before algebra, question frames, concrete values
-- [rules/visual-design-catalog.md](rules/visual-design-catalog.md) -- **22 implementable patterns** from 3b1b frame analysis (422 frames): probability sidebars, skip arcs, grid fills, interactive sliders, heatmaps, and more
+- [rules/visual-design-principles.md](rules/visual-design-principles.md) -- **16 core principles** from Tufte, Bret Victor, 3Blue1Brown: opacity layering, persistent context, geometry before algebra, question frames, concrete values, density ramp
+- [rules/visual-design-catalog.md](rules/visual-design-catalog.md) -- **26 implementable patterns** from 3b1b frame analysis + production learnings: probability sidebars, skip arcs, grid fills, interactive sliders, heatmaps, live pipeline data flow, linked dual panels, camera zoom detail, and more
 
 ### Video Production
 - [rules/scene-planning.md](rules/scene-planning.md) -- **START HERE for multi-scene videos.** Layout templates, scene plans, agent prompt structure, style.py contract

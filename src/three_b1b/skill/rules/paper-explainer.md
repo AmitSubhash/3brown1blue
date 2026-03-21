@@ -8,6 +8,61 @@ tags: [manim, research, paper, explainer, video, scientific, pedagogy]
 
 Prerequisites: you have read `equations.md` (MathTex, TransformMatchingTex, submobjects) and `animations.md` (animation types, rate functions, composition). This file teaches you how to THINK about building a video, not just how to write the code.
 
+## Mandatory Pre-Code Gates
+
+**Do NOT write any Manim code until these 3 artifacts exist.** This is the single most impactful rule. Skipping these gates produces videos that are "animation-driven" (rectangles + text) instead of "story-driven" (visual explanations timed to narration).
+
+### Gate 1: Narration Script
+
+Write what the narrator would say, with timestamps. This determines scene boundaries, pacing, and what the viewer needs to SEE when they HEAR each sentence.
+
+```
+## Narration Script
+
+[0:00-0:10] HOOK
+"What if a tiny chip smaller than a penny could let a paralyzed person
+speak again? That's exactly what this paper shows."
+
+[0:10-0:40] PROBLEM
+"After a brainstem stroke, the motor pathways that control speech are
+destroyed. But the cortex -- where speech is planned -- is still intact."
+
+[0:40-1:30] BACKGROUND
+...
+```
+
+**Why narration first?** Without it, you time animations to "what feels right" instead of "what the viewer needs." You end up with 42-second pipeline scenes and 17-second hooks because code length drove duration, not story beats.
+
+### Gate 2: Curriculum (Scene List)
+
+Map narration blocks to scenes. For each scene, specify:
+- Which narration timestamps it covers
+- The ONE key insight the viewer should take away
+- Which visual pattern(s) from the catalog to use (by number)
+- The layout template (from scene-planning.md)
+
+```
+## Curriculum
+
+Scene 1 (Hook, 0:00-0:10): Key result reveal
+  Insight: "This is possible and it works"
+  Patterns: #22 Title Card, #15 Question Frame
+  Template: FULL_CENTER
+
+Scene 2 (Problem, 0:10-0:40): Anatomy of the problem
+  Insight: "Cortex is preserved, pathway is broken"
+  Patterns: #10 Side-by-Side, #19 Strikethrough
+  Template: DUAL_PANEL
+```
+
+**Why curriculum?** It forces you to pick visual patterns BEFORE coding. Without it, you default to labeled_box() + Text() for everything.
+
+### Gate 3: Style.py Contract
+
+Write style.py with all semantic colors, helpers, and domain-specific components. This is the shared contract between scenes. See scene-planning.md for the template.
+
+**Only after all 3 gates pass do you write scene code.**
+
 ## Why animate a research paper?
 
 Static figures are snapshots. Animation shows process, causality, and temporal evolution. A viewer watching an animation builds a mental simulation they can replay. A reader looking at a figure builds a static image. The mental simulation is stickier and more transferable.
@@ -178,6 +233,73 @@ class PipelineDiagram(Scene):
         for arrow in arrows:
             self.play(MoveAlongPath(dot, arrow, run_time=0.5))
         self.play(FadeOut(dot, scale=2))
+```
+
+### Live data flow (preferred over dot animation)
+
+A sliding dot is the MINIMUM viable pipeline animation. Prefer live values: show concrete numbers entering the pipeline and transforming at each stage. The viewer watches cause and effect propagate.
+
+```python
+class LivePipeline(Scene):
+    """Pipeline with real values flowing through each stage."""
+
+    def construct(self) -> None:
+        # Build pipeline (same as above, omitted for brevity)
+        # ...
+
+        # Live values that update as data flows through
+        t = ValueTracker(0)  # 0=input, 1=stage1, 2=stage2, 3=output
+
+        input_vals = [0.34, -0.12, 0.92]
+        stage1_out = [0.87, 0.02, 0.11]  # e.g. after softmax
+        stage2_out = ["cat", "0.87"]       # e.g. after argmax
+
+        # Input display: updates based on tracker
+        input_display = always_redraw(lambda: Matrix(
+            [[f"{v:.2f}"] for v in input_vals],
+            element_to_mobject=lambda s: MathTex(s, font_size=20),
+        ).next_to(boxes[0], DOWN, buff=0.3).set_opacity(
+            1.0 if t.get_value() < 1 else 0.3
+        ))
+
+        # Stage 1 output: appears when tracker passes 1
+        stage1_display = always_redraw(lambda: VGroup(*[
+            Rectangle(width=v * 3, height=0.2, fill_color=BLUE,
+                      fill_opacity=0.8 if t.get_value() >= 1 else 0)
+            for v in stage1_out
+        ]).arrange(DOWN, buff=0.05).next_to(boxes[1], DOWN, buff=0.3))
+
+        self.add(input_display, stage1_display)
+        self.play(t.animate.set_value(3), run_time=6,
+                  rate_func=linear)
+        self.wait(1, frozen_frame=False)
+```
+
+**Why live values over dots?** A dot says "data moves left to right." Live values say "these specific numbers enter, get transformed by softmax into these probabilities, which the language model converts to this word." The viewer can verify the math and build intuition about what each stage does.
+
+### Pipeline zoom-ins with MovingCameraScene
+
+When a pipeline stage deserves detail, use `MovingCameraScene` to zoom into it while keeping the full pipeline visible (dimmed) for context.
+
+```python
+class PipelineZoom(MovingCameraScene):
+    def construct(self) -> None:
+        # Build full pipeline...
+        # Zoom into stage 2
+        self.play(
+            self.camera.frame.animate.set(
+                width=boxes[1].width * 3
+            ).move_to(boxes[1]),
+            *[b.animate.set_opacity(0.15) for b in boxes if b != boxes[1]],
+            run_time=1.5,
+        )
+        # Show internal detail of stage 2...
+        # Zoom back out
+        self.play(
+            self.camera.frame.animate.set(width=14).move_to(ORIGIN),
+            *[b.animate.set_opacity(1) for b in boxes],
+            run_time=1.5,
+        )
 ```
 
 ## Animating results and evidence

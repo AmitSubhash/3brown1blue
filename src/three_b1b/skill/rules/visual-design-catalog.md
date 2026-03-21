@@ -262,6 +262,117 @@ self.play(Write(title)); self.wait(2); self.play(FadeOut(title))
 
 ---
 
+## Dynamic Data Patterns
+
+### 23. Live Pipeline Data Flow
+
+Show concrete values entering a pipeline and transforming at each stage. The viewer watches numbers change as data moves through boxes. Far more informative than a dot sliding across arrows.
+
+```python
+t = ValueTracker(0)  # progress: 0=start, 3=end
+
+# Input values appear, then fade as they enter stage 1
+input_display = always_redraw(lambda: VGroup(*[
+    DecimalNumber(v, num_decimal_places=2, font_size=20,
+                  color=interpolate_color(WHITE, WHITE, 0.5))
+    for v in [0.34, 0.92, 0.16]
+]).arrange(DOWN, buff=0.05).next_to(boxes[0], DOWN, buff=0.3).set_opacity(
+    max(0, 1 - t.get_value())  # fade as data moves past
+))
+
+# Output bars grow as data reaches the end
+output_bars = always_redraw(lambda: VGroup(*[
+    Rectangle(width=p * 3 * min(1, max(0, t.get_value() - 2)),
+              height=0.2, fill_color=BLUE, fill_opacity=0.8)
+    for p in [0.87, 0.11, 0.02]
+]).arrange(DOWN, buff=0.05).next_to(boxes[-1], DOWN, buff=0.3))
+
+self.add(input_display, output_bars)
+self.play(t.animate.set_value(3), run_time=6, rate_func=linear)
+```
+
+### 24. Linked Dual Panel with ValueTracker
+
+Two views of the same data, synchronized via a shared ValueTracker. Moving one updates the other. The viewer viscerally grasps "these are the same signal in different representations."
+
+```python
+t = ValueTracker(0)
+
+# Left: raw signal with a moving cursor
+cursor = always_redraw(lambda: DashedLine(
+    left_axes.c2p(t.get_value(), -3),
+    left_axes.c2p(t.get_value(), 3),
+    color=YELLOW, stroke_width=1.5,
+))
+
+# Right: feature values update as cursor moves
+feature_bars = always_redraw(lambda: VGroup(*[
+    Rectangle(width=abs(compute_feature(t.get_value(), ch)) * 2,
+              height=0.25, fill_color=interpolate_color(RED, BLUE,
+              compute_feature(t.get_value(), ch)),
+              fill_opacity=0.8)
+    for ch in range(8)
+]).arrange(DOWN, buff=0.03).move_to(right_axes))
+
+self.play(t.animate.set_value(4), run_time=6, rate_func=linear)
+```
+
+### 25. Heatmap Grid with interpolate_color
+
+Grid of squares where fill color encodes a continuous value. More visually rich than labeled boxes. Use for sensor arrays, weight matrices, confusion matrices, or any 2D data.
+
+```python
+values = np.random.rand(8, 8)  # e.g., electrode modulation depths
+grid = VGroup()
+for r in range(8):
+    for c in range(8):
+        sq = Square(side_length=0.35, stroke_width=0.5)
+        sq.set_fill(
+            interpolate_color(ManimColor("#1a1a2e"), YELLOW, values[r, c]),
+            opacity=0.9,
+        )
+        grid.add(sq)
+grid.arrange_in_grid(8, 8, buff=0.02)
+
+# Reveal with sweep effect
+self.play(LaggedStart(
+    *[FadeIn(sq, scale=0.8) for sq in grid],
+    lag_ratio=0.01,
+), run_time=2)
+```
+
+### 26. Camera Zoom Detail (MovingCameraScene)
+
+Zoom into a specific region of a diagram while keeping the full context visible (dimmed). Essential for pipeline zoom-ins where you want to show internal structure without losing the big picture.
+
+```python
+class ZoomDetail(MovingCameraScene):
+    def construct(self):
+        # Build full diagram...
+        full_diagram = build_pipeline()
+        target_box = full_diagram[2]  # zoom into stage 3
+
+        # Zoom in: enlarge target, dim everything else
+        self.play(
+            self.camera.frame.animate.set(
+                width=target_box.width * 3.5
+            ).move_to(target_box),
+            *[m.animate.set_opacity(0.1)
+              for m in full_diagram if m != target_box],
+            run_time=1.5,
+        )
+        # Show internal detail at zoomed scale...
+
+        # Zoom out: restore everything
+        self.play(
+            self.camera.frame.animate.set(width=14).move_to(ORIGIN),
+            *[m.animate.set_opacity(1) for m in full_diagram],
+            run_time=1.5,
+        )
+```
+
+---
+
 ## Quick Reference
 
 | #  | Pattern                        | Category      |
@@ -288,3 +399,7 @@ self.play(Write(title)); self.wait(2); self.play(FadeOut(title))
 | 20 | Interactive Slider             | Pedagogical   |
 | 21 | Interpretive Piecewise Labels  | Pedagogical   |
 | 22 | Section Title Card             | Pedagogical   |
+| 23 | Live Pipeline Data Flow        | Dynamic Data  |
+| 24 | Linked Dual Panel              | Dynamic Data  |
+| 25 | Heatmap Grid                   | Dynamic Data  |
+| 26 | Camera Zoom Detail             | Dynamic Data  |

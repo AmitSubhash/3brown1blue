@@ -288,7 +288,57 @@ def fade_all(scene, run_time=0.8):
     scene.play(*[FadeOut(m) for m in scene.mobjects], run_time=run_time)
 ```
 
-## 12. Post-Render Checklist
+## 12. Visual Variety Audit
+
+**Rule: No two consecutive scenes should use the same visual technique.**
+
+Count the distinct visual techniques across all scenes. If > 50% of scenes are "labeled boxes + text," the video will feel flat. Each scene must use at least ONE of:
+- `ValueTracker` + `always_redraw` (live updating values)
+- `MovingCameraScene` (zoom in/out)
+- `interpolate_color` heatmap or gradient
+- `Axes` + `plot` (data visualization)
+- `BarChart` or manual bar chart with `GrowFromEdge`
+- `LaggedStart` with staggered reveals
+- Equation dim-and-reveal decomposition
+
+**Minimum variety for an N-scene video:**
+- N <= 4: at least 3 distinct techniques
+- N = 5-8: at least 5 distinct techniques
+- N > 8: at least 6 distinct techniques
+
+**The test:** List each scene and its primary visual technique. If you see "labeled_box pipeline" more than twice, replace one with a live data flow, a heatmap, or a camera zoom.
+
+## 13. Question Frame Minimum
+
+**Rule: At least one question frame per 3 scenes.**
+
+A question frame (catalog pattern #15) poses a question on screen, pauses 2-3 seconds for the viewer to predict, then answers visually. Without them, the viewer is passive. With them, the viewer actively engages.
+
+For an 8-scene video: include at least 2-3 question frames.
+
+```python
+# Question frame template
+question = Text("Can a small patch of cortex\noutperform surface electrodes?",
+                font_size=28, color=YELLOW)
+self.play(Write(question))
+self.wait(2.5)  # viewer predicts
+self.play(FadeOut(question))
+# Then show the answer visually (bar chart, number, etc.)
+```
+
+## 14. Density Ramp Audit
+
+**Rule: Frame complexity must increase across the video.**
+
+Count the number of visible elements at each scene's midpoint:
+- Scene 1-2: 3-5 elements (sparse, inviting)
+- Scene 3-5: 6-10 elements (building complexity)
+- Scene 6-7: 10-15 elements (peak density)
+- Final scene: 3-5 elements (resolution, simplicity)
+
+This creates a narrative arc in visual density. Constant density (every scene has 6 elements) feels monotonous. Starting dense overwhelms.
+
+## 15. Post-Render Checklist
 
 1. No text overlapping other text
 2. No text overlapping graphical elements
@@ -297,3 +347,8 @@ def fade_all(scene, run_time=0.8):
 5. Every animation adds meaning (no decorative motion)
 6. Equations appear AFTER their visual motivation
 7. Author names and paper metadata are correct
+8. Visual variety: at least 5 distinct techniques across scenes
+9. At least 2 question frames in the video
+10. Density ramp: early scenes sparse, middle dense, ending simple
+11. At least one scene uses ValueTracker/always_redraw for live values
+12. Pipeline scenes show data transforming, not just dots sliding

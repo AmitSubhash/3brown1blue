@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="assets/header.gif" alt="3brown1blue banner" width="800">
+</p>
+
 # 3brown1blue
 
 Generate 3Blue1Brown-style Manim explainer videos from topics or slide decks, or install the Manim skill into your AI coding tool.
 
 ## Install the skill (recommended)
 
-The primary use: install 24 rule files, templates, and safe wrappers into your AI tool so it generates production-quality animations.
+The primary use: install 27 rule files, templates, and safe wrappers into your AI tool so it generates production-quality animations.
 
 ```bash
 pip install 3brown1blue
