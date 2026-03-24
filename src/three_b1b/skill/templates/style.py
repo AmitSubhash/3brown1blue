@@ -42,15 +42,97 @@ def labeled_box(
     height: float = 1.0,
     color: str = BLUE_C,
     font_size: int = LABEL_SIZE,
+    fill_opacity: float = 0.2,
 ) -> VGroup:
-    """Labeled rectangle for pipeline/architecture diagrams."""
+    """Labeled rectangle for pipeline/architecture diagrams.
+
+    The label sits at the box center. If placing child elements inside,
+    offset them DOWN * 0.3 from center to avoid covering the label.
+    """
     rect = RoundedRectangle(
         width=width, height=height, corner_radius=0.1,
-        color=color, fill_opacity=0.2, stroke_width=2,
+        color=color, fill_opacity=fill_opacity, stroke_width=2,
     )
     text = Text(label, font_size=font_size, color=color)
     text.move_to(rect)
+    if text.width > width - 0.3:
+        text.scale_to_fit_width(width - 0.3)
     return VGroup(rect, text)
+
+
+def pipeline_arrow(start, end, color=WHITE, stroke_width=3) -> Arrow:
+    """Arrow between pipeline boxes. Uses buff=0.25 to avoid tip crowding."""
+    return Arrow(
+        start.get_right(), end.get_left(),
+        buff=0.25, color=color, stroke_width=stroke_width,
+        max_tip_length_to_length_ratio=0.15,
+    )
+
+
+# ── Text Helpers (learned from production audits) ────────────
+
+def safe_text(
+    text: str,
+    font_size: int = BODY_SIZE,
+    color=WHITE,
+    max_width: float = 12.0,
+) -> Text:
+    """Single-line text with automatic width capping."""
+    t = Text(text, font_size=font_size, color=color)
+    if t.width > max_width:
+        t.scale_to_fit_width(max_width)
+    return t
+
+
+def safe_multiline(
+    *lines: str,
+    font_size: int = BODY_SIZE,
+    color=WHITE,
+    line_buff: float = 0.3,
+    max_width: float = 12.0,
+) -> VGroup:
+    """Centered multi-line text. Each line is a separate Text object.
+
+    Manim's Text('line1\\nline2') left-aligns lines relative to each
+    other. This helper creates separate Text objects and arranges them
+    with center=True so the block is properly centered.
+
+    Usage:
+        msg = safe_multiline("Line one", "Line two", "Line three")
+        msg.move_to(ORIGIN)
+    """
+    texts = []
+    for line in lines:
+        t = Text(line, font_size=font_size, color=color)
+        if t.width > max_width:
+            t.scale_to_fit_width(max_width)
+        texts.append(t)
+    return VGroup(*texts).arrange(DOWN, buff=line_buff, center=True)
+
+
+def section_title(text: str, color=WHITE) -> Text:
+    """Section title at standard top position."""
+    return Text(text, font_size=TITLE_SIZE, color=color).to_edge(UP, buff=0.5)
+
+
+def bottom_note(text: str, color=YELLOW) -> Text:
+    """Bottom annotation with width safety.
+
+    Animate with FadeIn(note, shift=UP*0.2), NOT Write().
+    Write() creates ugly partial-stroke frames on small text.
+    """
+    t = Text(text, font_size=LABEL_SIZE, color=color)
+    if t.width > 12.0:
+        t.scale_to_fit_width(12.0)
+    return t.to_edge(DOWN, buff=0.5)
+
+
+# ── Scene Helpers ────────────────────────────────────────────
+
+def fade_all(scene: Scene, *mobjects) -> None:
+    """FadeOut multiple mobjects at once."""
+    if mobjects:
+        scene.play(*[FadeOut(m) for m in mobjects])
 
 
 def story_bridge(scene: Scene, text: str) -> None:

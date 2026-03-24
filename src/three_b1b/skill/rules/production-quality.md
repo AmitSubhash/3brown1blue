@@ -210,7 +210,7 @@ When delegating scene writing to subagents, the prompt MUST include:
 14. Content fills >= 50% of the frame (no large dead zones)
 15. Data viz bars/dots/lines meet minimum size and opacity thresholds
 
-## 8. Dimming on Dark Backgrounds
+## 8. Dimming vs FadeOut on Dark Backgrounds
 
 **Rule: DIM_OPACITY = 0.1, never 0.3**
 
@@ -223,7 +223,28 @@ def dim_mob(scene, *mobs, opacity=DIM_OPACITY):
     scene.play(*[m.animate.set_opacity(opacity) for m in mobs], run_time=0.5)
 ```
 
-When even 0.1 is too much, use `FadeOut` instead of dimming.
+**Rule: Dim BESIDE, FadeOut UNDER**
+
+Use dimming (0.1 opacity) when the dimmed element stays visible as context
+BESIDE new content (e.g., dim other metrics while highlighting one).
+
+Use FadeOut when new content will be placed ON TOP of the previous element
+(e.g., takeaway text over a pipeline diagram). Even 0.1 opacity colored
+elements bleed through white text on dark backgrounds.
+
+```python
+# GOOD: dim element that stays to the side while highlighting another
+self.play(other_cards.animate.set_opacity(DIM_OPACITY))
+self.play(Indicate(active_card))
+
+# GOOD: remove element before overlaying text on the same region
+self.play(FadeOut(pipeline))
+self.play(Write(takeaway_text))
+
+# BAD: dim then overlay -- colored boxes bleed through white text
+self.play(pipeline.animate.set_opacity(DIM_OPACITY))
+self.play(Write(takeaway_text))  # text sits on top of visible pipeline
+```
 
 ## 9. Text Width Enforcement
 
@@ -352,3 +373,48 @@ This creates a narrative arc in visual density. Constant density (every scene ha
 10. Density ramp: early scenes sparse, middle dense, ending simple
 11. At least one scene uses ValueTracker/always_redraw for live values
 12. Pipeline scenes show data transforming, not just dots sliding
+
+## 16. Known Failure Patterns (from production audits)
+
+These bugs recur across builds. Check for each explicitly:
+
+### Text centering with \n
+**Bug:** `Text("Line one\nLine two").move_to(ORIGIN)` left-aligns lines.
+**Fix:** `safe_multiline("Line one", "Line two").move_to(ORIGIN)`.
+
+### next_to() overflow stacking
+**Bug:** `tags.next_to(box, RIGHT)` when box is at x=3.5 pushes tags off-screen.
+Guard code clamps them back ON TOP of the box.
+**Fix:** Place auxiliary elements BELOW (DOWN) when the source is at |x| > 2.5.
+
+### Title dimmed, not removed
+**Bug:** `title.animate.set_opacity(0.35)` -- new text then overlaps the faded title.
+**Fix:** Always `FadeOut(title)` completely. Dimming is not lifecycle removal.
+
+### Child covers labeled_box label
+**Bug:** `child.move_to(box.get_center())` hides the label text.
+**Fix:** `child.move_to(box.get_center() + DOWN * 0.3)`.
+
+### Scale truncates labels
+**Bug:** Scaling boxes for split-view makes "Instruction Cache" become "Instr".
+**Fix:** Use short labels ("I-Cache") for reduced-size layouts.
+
+### Dim opacity bleeds under overlay text
+**Bug:** Pipeline at DIM_OPACITY=0.1 still visible through white text overlay.
+**Fix:** `FadeOut(pipeline)` completely when text needs a clean background.
+
+### Empty transition frames
+**Bug:** Between phases, only title visible with 80% empty screen.
+**Fix:** `self.play(FadeOut(*phase1), Write(new_title))` in same call.
+
+### Arrow tip crowding
+**Bug:** Arrow between adjacent boxes has tip overlapping box label.
+**Fix:** `pipeline_arrow()` with `buff=0.25` minimum. Increase for close boxes.
+
+### Write() on bottom notes
+**Bug:** `Write(note)` creates garbled partial-stroke frames at small font sizes.
+**Fix:** `FadeIn(note, shift=UP * 0.2)` for all bottom notes.
+
+### Chart legend overlap
+**Bug:** Legend placed in upper-left where curves converge.
+**Fix:** Place legend in the corner with LEAST data density.

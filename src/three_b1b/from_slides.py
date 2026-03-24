@@ -180,6 +180,14 @@ def _format_slides_markdown(slides: list[dict], vision_descs: dict[int, list[str
               show_default=True, help="Render quality: l=fast, m=medium, h=1080p, k=4K.")
 @click.option("--mode", type=click.Choice(["auto", "text", "vision"]), default="auto",
               show_default=True, help="Slide extraction mode (auto detects from content).")
+@click.option("--audience", "-a",
+              type=click.Choice(["high-school", "undergrad", "graduate", "industry"]),
+              default="undergrad", show_default=True,
+              help="Target audience level.")
+@click.option("--domain", "-d",
+              type=click.Choice(["auto", "machine-learning", "mathematics", "physics", "biology", "security", "neuroscience", "algorithms"]),
+              default="auto", show_default=True,
+              help="Academic domain (auto-detect if omitted).")
 def from_slides(
     deck: Path,
     provider: Optional[str],
@@ -190,6 +198,8 @@ def from_slides(
     render: bool,
     quality: str,
     mode: str,
+    audience: str,
+    domain: str,
 ) -> None:
     """Generate a Manim animated explainer from a PowerPoint file.
 
@@ -200,6 +210,7 @@ def from_slides(
     Examples:
       3brown1blue from-slides lecture.pptx --provider anthropic --render
       3brown1blue from-slides talk.pptx -p openai --mode vision -o talk.py
+      3brown1blue from-slides lecture.pptx -p anthropic -a graduate -d neuroscience
     """
     from ._shared import prompt_provider, confirm_plan
 
@@ -236,14 +247,18 @@ def from_slides(
                     )
 
     slides_md = _format_slides_markdown(slides, vision_descs)
-    system = _build_system_prompt()
+    system = _build_system_prompt(audience=audience, domain=domain)
 
     click.echo(f"\nPlanning video with {plan_model}...")
-    plan = call_llm(provider, plan_model, api_key, SLIDES_PLAN.format(slides_content=slides_md), system=system)
+    click.echo(f"  Audience: {audience}  Domain: {domain}")
+    plan = call_llm(provider, plan_model, api_key,
+                    SLIDES_PLAN.format(slides_content=slides_md, audience=audience, domain=domain),
+                    system=system, audience=audience, domain=domain)
     plan = confirm_plan(plan)
 
     click.echo(f"\nGenerating Manim code with {model}...")
-    raw = call_llm(provider, model, api_key, SLIDES_GENERATE.format(plan=plan), system=system)
+    raw = call_llm(provider, model, api_key, SLIDES_GENERATE.format(plan=plan),
+                   system=system, audience=audience, domain=domain)
     code = _extract_code(raw)
 
     out_path = Path(output)

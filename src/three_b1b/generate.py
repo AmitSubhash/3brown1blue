@@ -52,8 +52,17 @@ PROVIDERS = {
 MAX_TOKENS = 16384
 
 
-def _build_system_prompt() -> str:
+def _build_system_prompt(audience: str = "undergrad", domain: str = "auto") -> str:
     parts: list[str] = []
+    # Audience rules FIRST (highest priority)
+    audience_path = SKILL_SOURCE / "audiences" / f"{audience}.md"
+    if audience_path.exists():
+        parts.append(f"\n\n## Audience: {audience.title()}\n\n{audience_path.read_text()}")
+    # Domain rules SECOND
+    if domain != "auto":
+        domain_path = SKILL_SOURCE / "domains" / f"{domain}.md"
+        if domain_path.exists():
+            parts.append(f"\n\n## Domain: {domain.title()}\n\n{domain_path.read_text()}")
     # SKILL.md is the main entry point -- gotchas, templates, rule index
     skill_md = SKILL_SOURCE / "SKILL.md"
     if skill_md.exists():
@@ -195,12 +204,14 @@ def call_llm(
     api_key: str,
     user_msg: str,
     system: Optional[str] = None,
+    audience: str = "undergrad",
+    domain: str = "auto",
 ) -> str:
     """Call any configured LLM provider with explicit system and user messages."""
     if provider not in PROVIDERS:
         click.echo(f"Unknown provider '{provider}'. Valid: {', '.join(PROVIDERS)}")
         sys.exit(1)
-    sys_prompt = system if system is not None else _build_system_prompt()
+    sys_prompt = system if system is not None else _build_system_prompt(audience=audience, domain=domain)
     if provider == "claude-code":
         return _call_claude_code(user_msg, model, sys_prompt)
     if provider == "anthropic":
@@ -238,6 +249,14 @@ def _render_scene(scene_file: Path, quality: str) -> None:
 @click.option("--render", is_flag=True, help="Run manim on the generated file.")
 @click.option("--quality", "-q", type=click.Choice(["l", "m", "h", "k"]), default="l",
               show_default=True, help="Render quality: l=low/fast, m=medium, h=1080p, k=4K.")
+@click.option("--audience", "-a",
+              type=click.Choice(["high-school", "undergrad", "graduate", "industry"]),
+              default="undergrad", show_default=True,
+              help="Target audience level.")
+@click.option("--domain", "-d",
+              type=click.Choice(["auto", "machine-learning", "mathematics", "physics", "biology", "security", "neuroscience", "algorithms"]),
+              default="auto", show_default=True,
+              help="Academic domain (auto-detect if omitted).")
 def generate(
     topic: str,
     provider: Optional[str],
@@ -247,6 +266,8 @@ def generate(
     output: str,
     render: bool,
     quality: str,
+    audience: str,
+    domain: str,
 ) -> None:
     """Generate a Manim explainer video from TOPIC.
 
@@ -259,6 +280,7 @@ def generate(
       3brown1blue generate "backpropagation" -p claude-code
       3brown1blue generate "Fourier transform" --provider openai --render
       3brown1blue generate "attention mechanism" -p anthropic --render -q h
+      3brown1blue generate "neural ODEs" -a graduate -d machine-learning
     """
     from .prompts import RESEARCH_AND_PLAN, GENERATE_FROM_PLAN
     from ._shared import prompt_provider, confirm_plan
@@ -274,8 +296,10 @@ def generate(
     # Step 1: Research and plan
     click.echo(f"\nPlanning: \"{topic}\"")
     click.echo(f"Provider: {cfg['label']}  ({plan_model})")
+    click.echo(f"Audience: {audience}  Domain: {domain}")
     plan = call_llm(provider, plan_model, api_key,
-                    RESEARCH_AND_PLAN.format(topic=topic))
+                    RESEARCH_AND_PLAN.format(topic=topic, audience=audience, domain=domain),
+                    audience=audience, domain=domain)
 
     # Step 2: Review
     plan = confirm_plan(plan)
@@ -283,7 +307,8 @@ def generate(
     # Step 3: Generate code from plan
     click.echo(f"\nGenerating Manim code with {model}...")
     raw = call_llm(provider, model, api_key,
-                   GENERATE_FROM_PLAN.format(plan=plan))
+                   GENERATE_FROM_PLAN.format(plan=plan),
+                   audience=audience, domain=domain)
     code = _extract_code(raw)
 
     out_path = Path(output)

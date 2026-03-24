@@ -174,16 +174,52 @@ Read style.py at [path]. Import: from style import *
 ### Section 2: Rules (copy-paste, same for ALL agents)
 ```
 RULES (mandatory, non-negotiable):
+
+-- Layout & bounds --
 1. Layout: Use the specified template. Never use absolute x > 5.5 or y > 3.2
-2. Text: Use safe_text() for body/notes. Max width 12 Manim units
-3. Containers: Child elements positioned relative to parent (next_to, move_to)
-4. Lifecycle: FadeOut titles/headers before new content reuses their region
-5. Density: Fill 50%+ of frame. Bars: fill_opacity >= 0.6, width >= 0.3
-6. Cleanup: FadeOut all elements before the next logical section
-7. MathTex: No dollar signs. Use Tex for mixed text+math
-8. Animations: Write() for text, Create() for shapes, ReplacementTransform for eq chains
-9. Bottom text: buff >= 0.5, FadeOut previous before adding new
-10. Updaters: self.wait(frozen_frame=False) when updaters are active
+2. Density: Fill 50%+ of frame. Bars: fill_opacity >= 0.6, width >= 0.3
+3. Edge overflow: If a box is at |x| > 2.5, place auxiliary labels BELOW (DOWN),
+   never further toward the screen edge. Do NOT write x-clamp guards.
+
+-- Text --
+4. Text: Use safe_text() for single lines. Use safe_multiline() for centered
+   multi-line text. NEVER use \n inside Text() for centered displays.
+5. Bottom notes: Use bottom_note() helper. Animate with FadeIn(note, shift=UP*0.2),
+   NOT Write(). Write() creates ugly partial-stroke frames on small text.
+6. Scaled layouts: When boxes will be shown at reduced size (split-view, header),
+   use abbreviated labels ("I-Cache" not "Instruction Cache"). Text does not reflow.
+
+-- Containers --
+7. Containers: Child elements positioned relative to parent (next_to, move_to).
+   Children inside a labeled_box() must be offset DOWN * 0.3 from center to avoid
+   covering the label.
+
+-- Lifecycle & transitions --
+8. Lifecycle: FadeOut titles/headers COMPLETELY before new content appears in the
+   top 25% of the frame. Dimming to 0.1 is NOT removal. FadeOut means FadeOut.
+9. Overlay text: When text needs a clean background, FadeOut previous elements
+   completely. Only dim (0.1 opacity) when the dimmed element stays BESIDE new
+   content, never UNDER it.
+10. Transitions: Combine FadeOut of previous phase with Write/FadeIn of next
+    phase title in a SINGLE self.play() call. Never leave a frame with only a
+    title and > 60% empty space.
+11. Cleanup: FadeOut all elements before the next logical section.
+
+-- Animations --
+12. Animations: Write() for text, Create() for shapes, ReplacementTransform for
+    equation chains. Use LaggedStart(*[Write(m) for m in group]) not
+    LaggedStartMap(Write, group).
+13. MathTex: No dollar signs. Use Tex for mixed text+math.
+14. Updaters: self.wait(frozen_frame=False) when updaters are active.
+15. DIM_OPACITY = 0.1, never 0.3. On dark backgrounds, 0.3 still competes.
+
+-- Diagrams --
+16. Arrows: Use pipeline_arrow() with buff=0.25. For arrows between boxes less
+    than 1.5 units apart, increase buff to 0.3 or reduce tip size.
+17. Chart legends: Place in the corner with LEAST data density. For rising
+    curves, use lower-right. Never place where curves converge.
+18. Exact metadata: Copy the exact paper title, author list, and year into the
+    scene. Never guess or abbreviate author names.
 ```
 
 ### Section 3: Scene Plan (unique per agent)
@@ -195,7 +231,10 @@ The detailed creative description of what to show and how.
 
 ## style.py Template (Enhanced)
 
-The planning phase should produce this enhanced style.py:
+The planning phase should produce this enhanced style.py. Copy the template from
+`templates/style.py` and customize the color palette for your domain.
+
+Key helpers every project must have:
 
 ```python
 from manim import *
@@ -206,7 +245,7 @@ SECONDARY = "#2ECC71"
 ACCENT = "#F1C40F"
 DANGER = "#E74C3C"
 SUCCESS = "#27AE60"
-# ... domain-specific colors ...
+DIM_OPACITY = 0.1  # never 0.3 on dark backgrounds
 
 # -- Font Sizes --
 TITLE_SIZE = 42
@@ -224,36 +263,97 @@ RIGHT_X = 3.5
 SAFE_WIDTH = 12.0
 SAFE_HEIGHT = 6.0
 
-# -- Safe Helpers --
-def section_title(text, color=WHITE):
-    return Text(text, font_size=TITLE_SIZE, color=color).to_edge(UP, buff=0.5)
-
+# -- Text Helpers --
 def safe_text(text, font_size=BODY_SIZE, color=WHITE, max_width=12.0):
+    """Single-line text with width cap."""
     t = Text(text, font_size=font_size, color=color)
     if t.width > max_width:
         t.scale_to_fit_width(max_width)
     return t
 
+def safe_multiline(*lines, font_size=BODY_SIZE, color=WHITE,
+                   line_buff=0.3, max_width=12.0):
+    """Centered multi-line text. Avoids left-align bug with \\n in Text().
+    Each line is a separate Text in a VGroup with center=True."""
+    texts = []
+    for line in lines:
+        t = Text(line, font_size=font_size, color=color)
+        if t.width > max_width:
+            t.scale_to_fit_width(max_width)
+        texts.append(t)
+    return VGroup(*texts).arrange(DOWN, buff=line_buff, center=True)
+
+def section_title(text, color=WHITE):
+    return Text(text, font_size=TITLE_SIZE, color=color).to_edge(UP, buff=0.5)
+
 def bottom_note(text, color=YELLOW):
+    """Animate with FadeIn(shift=UP*0.2), NOT Write()."""
     t = Text(text, font_size=LABEL_SIZE, color=color)
     if t.width > SAFE_WIDTH:
         t.scale_to_fit_width(SAFE_WIDTH)
     return t.to_edge(DOWN, buff=0.5)
 
+# -- Diagram Helpers --
+def labeled_box(label, width=2.5, height=1.0, color=BLUE_C,
+                font_size=LABEL_SIZE, fill_opacity=0.2):
+    """Label sits at center. Child elements: offset DOWN * 0.3."""
+    rect = RoundedRectangle(width=width, height=height, corner_radius=0.1,
+                            color=color, fill_opacity=fill_opacity, stroke_width=2)
+    text = Text(label, font_size=font_size, color=color)
+    text.move_to(rect)
+    if text.width > width - 0.3:
+        text.scale_to_fit_width(width - 0.3)
+    return VGroup(rect, text)
+
+def pipeline_arrow(start, end, color=WHITE, stroke_width=3):
+    """Arrow with buff=0.25 to prevent tip crowding between adjacent boxes."""
+    return Arrow(start.get_right(), end.get_left(), buff=0.25,
+                 color=color, stroke_width=stroke_width,
+                 max_tip_length_to_length_ratio=0.15)
+
+# -- Scene Helpers --
 def fade_all(scene, *mobjects):
     if mobjects:
         scene.play(*[FadeOut(m) for m in mobjects])
+
+def story_bridge(scene, text):
+    bridge = Text(text, font_size=HEADING_SIZE, color=ACCENT)
+    scene.play(FadeIn(bridge, shift=UP * 0.3))
+    scene.wait(2.0)
+    scene.play(FadeOut(bridge, shift=UP * 0.3))
 ```
 
 ## Verification Phase
 
-After all scenes render, extract 3 frames per scene (start, mid, end)
-and visually check:
+After all scenes render, extract 5 frames per scene (at 10%, 25%, 50%, 75%, 90%)
+and visually check each frame:
 
-1. No elements clipped at screen edges
-2. No large empty regions (> 40% of frame)
-3. No overlapping text/elements
-4. Consistent title position across scenes
-5. Bottom notes fully visible
-6. Data viz elements clearly visible (not too small/dark)
-7. Paper metadata (title, authors) correct in final scene
+### Overlap checks
+1. No text overlapping other text
+2. No text overlapping graphical elements (boxes, arrows, charts)
+3. No elements clipped at screen edges
+4. Child elements inside labeled_box do not cover the label
+5. Chart legends do not overlap curve data
+6. GRM/example tags do not stack on top of source boxes
+
+### Density checks
+7. No frames with only a title and > 60% empty space (transition gap)
+8. Content fills >= 50% of frame at scene midpoint
+9. Bottom notes fully visible (not truncated at edges)
+
+### Consistency checks
+10. Title position consistent across scenes (TITLE_Y = 3.0)
+11. Colors match style.py semantic meanings
+12. Paper metadata (title, authors) correct in final scene
+
+### Text rendering checks
+13. Multi-line text is properly centered (not left-aligned)
+14. Scaled-down box labels are readable (not truncated to fragments)
+15. Bottom notes are NOT mid-Write() at their final frame -- use FadeIn
+
+### Common bugs to look for (from past audits)
+- `next_to(box, RIGHT)` pushing elements off-screen when box is near edge
+- `Text("line1\nline2")` left-aligning instead of centering
+- Title still visible (at reduced opacity) when new content overlaps it
+- "legit code" style blocks placed at box center covering the box label
+- Pipeline elements at DIM_OPACITY still visible under overlay text
