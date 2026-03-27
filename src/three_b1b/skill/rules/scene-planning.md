@@ -323,6 +323,63 @@ def story_bridge(scene, text):
     scene.play(FadeOut(bridge, shift=UP * 0.3))
 ```
 
+## Audience-Level Curriculum Redesign
+
+When the audience level changes (graduate to general, specialist to broad),
+do NOT simplify existing scenes. Rebuild the curriculum from scratch.
+
+**Why text simplification fails:** A graduate-level 10-scene video about
+matrix optimization has zero background scenes. A general-audience version
+needs 5-8 new foundational scenes (what is a matrix? what is a GPU? what
+is memory hierarchy?) before the optimization content even begins. Simply
+rewording the existing scenes leaves the viewer without the mental models
+needed to follow the argument.
+
+**The pattern:**
+1. Identify what the NEW audience does not know (list explicitly)
+2. Design new foundational scenes that build those mental models
+3. Keep only the 3-5 scenes from the original that still apply
+4. Rewrite those retained scenes with slower pacing and analogies
+5. Add a recap/wrap-up scene that ties the new scaffolding to the conclusion
+
+**Example:** NeuronMM paper, graduate (10 scenes) to general audience (15):
+- Scenes 1-4 (NEW): What LLMs do, matrix multiplication from scratch, how CPUs work
+- Scenes 5-8 (NEW): GPUs, memory hierarchy, bandwidth bottleneck, AI accelerators
+- Scenes 9-12 (REBUILT): Trainium architecture, constraints, SVD (with analogies)
+- Scenes 13-15 (ADAPTED): NeuronMM solution, results, wrap-up
+
+Rule: audience redesign = curriculum redesign, not text replacement.
+
+## Post-Generation Fix Cycle (Parallel Agents)
+
+When 3-4 agents generate scenes in parallel, expect 1-3 runtime errors
+that `py_compile` does not catch. Common categories:
+
+| Error | Cause | Fix |
+|---|---|---|
+| `'str' has no attribute 'interpolate'` | Hex string passed to `interpolate_color()` | Wrap in `ManimColor()` |
+| `IndexError` in animation | Animating a removed or never-added mobject | Check lifecycle order |
+| Layout overflow | `next_to()` pushing element off-screen near edges | Use `move_to()` with explicit coords |
+| Text truncation | Long label inside scaled-down container | Use abbreviated labels |
+
+**Fix workflow:**
+1. Run Phase 1+2 from "Multi-Scene Render Testing Workflow" (production-quality.md)
+2. Fix each failing scene, re-test at `-ql`
+3. Typically takes 1-2 fix iterations (10-20 min for 15 scenes)
+4. Only then proceed to full `-qh` render
+
+**File cleanup after renumbering:** When scene count or naming changes
+(e.g., 10 -> 15 scenes, `scene_02_bottleneck.py` -> `scene_02_llm.py`),
+explicitly remove old files:
+```bash
+# Check for orphans
+ls scene_*.py | sort
+git status  # shows deleted + untracked
+# Remove old files, stage new ones
+git rm scene_02_bottleneck.py
+git add scene_02_llm.py
+```
+
 ## Verification Phase
 
 After all scenes render, extract 5 frames per scene (at 10%, 25%, 50%, 75%, 90%)

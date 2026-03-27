@@ -103,19 +103,34 @@ self.play(LaggedStart(*[Write(m) for m in text_group], lag_ratio=0.2))
 
 Note: `LaggedStartMap(FadeIn, group)` and `LaggedStartMap(Create, group)` work fine. The issue is specific to `Write`.
 
-### Arrow tip color crash with interpolate_color
+### interpolate_color crashes with hex string constants
 
-**Cause:** Passing `interpolate_color()` result directly to Arrow's `color` param can crash because the arrow tip tries to call `.hex` on a color object that lacks it.
+**Cause:** `interpolate_color()` calls `.interpolate()` on its arguments, which
+requires `ManimColor` objects. Custom hex string constants (e.g., `CHIP_BLUE = "#4A90D9"`)
+are plain strings and lack this method. `py_compile` does NOT catch this -- it only
+surfaces at render time as `AttributeError: 'str' object has no attribute 'interpolate'`.
 
-**Fix:** Use a simple color constant for Arrow, then adjust opacity separately:
+**Fix:** Wrap hex strings in `ManimColor()`:
 ```python
-# BAD: crashes on arrow tip
-Arrow(start, end, color=interpolate_color(GRAY, YELLOW, 0.5))
+# BAD: crashes at render time
+color = interpolate_color(CHIP_BLUE, SUCCESS_GREEN, alpha)
+Dot(color=interpolate_color(CHIP_BLUE, SUCCESS_GREEN, 0.5))
 
-# GOOD: use Line instead, or set color simply
-line = Line(start, end, stroke_width=4, stroke_opacity=0.7, color=YELLOW)
+# GOOD: wrap in ManimColor()
+color = interpolate_color(ManimColor(CHIP_BLUE), ManimColor(SUCCESS_GREEN), alpha)
 
-# GOOD: if you need Arrow, use a plain color
+# ALSO GOOD: define constants as ManimColor in style.py
+CHIP_BLUE = ManimColor("#4A90D9")
+
+# ALSO GOOD: use built-in Manim colors (already ManimColor objects)
+color = interpolate_color(BLUE_C, GREEN_C, alpha)
+```
+
+This also applies to `average_color()` and any Manim utility that calls
+`.interpolate()` internally. For Arrows specifically, avoid `interpolate_color`
+entirely and use a plain color constant:
+```python
+# Arrow tip can also crash -- use plain color
 Arrow(start, end, color=YELLOW)
 ```
 

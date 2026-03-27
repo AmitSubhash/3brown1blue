@@ -192,7 +192,40 @@ When delegating scene writing to subagents, the prompt MUST include:
 4. **Lifecycle rule**: "FadeOut persistent elements before new content occupies their region."
 5. **Screen bounds**: "All elements fully visible within x:[-7,7] y:[-3.5,3.5]. Scale long text to fit."
 
-## 7. Pre-Render Checklist
+## 7. Multi-Scene Render Testing Workflow
+
+`py_compile` catches syntax errors but NOT Manim runtime errors (color type
+mismatches, missing mobject attributes, layout overflows). Always use this
+two-phase workflow for multi-scene projects:
+
+### Phase 1: Syntax check (fast, ~1s total)
+```bash
+for f in scene_*.py; do
+    python3 -m py_compile "$f" && echo "$f OK" || echo "FAIL: $f"
+done
+```
+
+### Phase 2: Low-quality render test (~30-60s for 15 scenes)
+```bash
+for entry in "scene_01.py ClassName" "scene_02.py ClassName" ...; do
+    FILE=$(echo "$entry" | awk '{print $1}')
+    CLASS=$(echo "$entry" | awk '{print $2}')
+    manim -ql "$FILE" "$CLASS" 2>&1 | tail -5
+done
+```
+
+`-ql` renders at 480p/15fps (10-20x faster than `-qh`) but exercises all
+Manim runtime codepaths: color operations, layout math, animation targets.
+
+### Phase 3: Full render only after all scenes pass
+```bash
+./render_all.sh h   # 1080p, only after ALL -ql tests pass
+```
+
+**When to run:** After parallel agent scene generation (agents introduce
+subtle runtime issues), style.py changes, or Manim version upgrades.
+
+## 8. Pre-Render Checklist
 
 1. Every text element has a clear position (not default center)
 2. Bottom text uses buff >= 0.5
