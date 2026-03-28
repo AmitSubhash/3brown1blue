@@ -8,9 +8,12 @@ from pathlib import Path
 
 import click
 
-from .edit_scene import edit, list_scenes
+from .audit_video import audit
+from .edit_scene import edit, list_scenes, preview
 from .from_slides import from_slides
 from .generate import generate
+from .remix_audience import remix
+from .split_project import split
 
 SKILL_SOURCE = Path(__file__).parent / "skill"
 
@@ -230,10 +233,14 @@ def main() -> None:
     """
 
 
+main.add_command(audit)
 main.add_command(generate)
 main.add_command(from_slides)
 main.add_command(edit)
 main.add_command(list_scenes)
+main.add_command(preview)
+main.add_command(remix)
+main.add_command(split)
 
 
 @main.command()

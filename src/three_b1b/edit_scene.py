@@ -187,6 +187,73 @@ def list_scenes(project_dir: Path) -> None:
     click.echo()
 
 
+# ── preview command ────────────────────────────────────────────────────────
+
+
+@click.command()
+@click.argument("target")
+@click.option("--dir", "-d", "project_dir", default=".",
+              type=click.Path(exists=True, file_okay=False, path_type=Path),
+              help="Project directory (auto-detected if omitted).")
+@click.option("--quality", "-q", type=click.Choice(["l", "m", "h", "k"]),
+              default="l", show_default=True,
+              help="Render quality: l=low/fast, m=medium, h=1080p, k=4K.")
+def preview(target: str, project_dir: Path, quality: str) -> None:
+    """Preview a scene in the manim GUI window.
+
+    TARGET can be a scene number (e.g., "5") or a filename
+    (e.g., "scene_05_gpu.py").
+
+    \b
+    Examples:
+      3brown1blue preview 5                    # preview scene 5 at low quality
+      3brown1blue preview 5 -q h               # preview at 1080p
+      3brown1blue preview scene_05_gpu.py       # by filename
+    """
+    project_dir = _find_project_dir(project_dir)
+    scenes = _discover_scenes(project_dir)
+
+    if not scenes:
+        click.echo(f"No scene_*.py files found in {project_dir}")
+        sys.exit(1)
+
+    # Resolve target to a scene dict
+    scene = None
+    if target.isdigit():
+        idx = int(target)
+        for s in scenes:
+            if s["index"] == idx:
+                scene = s
+                break
+        if scene is None:
+            click.echo(f"Scene {idx} not found. Available: "
+                        f"{[s['index'] for s in scenes]}")
+            sys.exit(1)
+    else:
+        target_path = project_dir / target
+        for s in scenes:
+            if s["file"] == target_path or s["file"].name == target:
+                scene = s
+                break
+        if scene is None:
+            click.echo(f"File '{target}' not found. "
+                        "Run `3brown1blue list` to see scenes.")
+            sys.exit(1)
+
+    scene_file: Path = scene["file"]
+    if not scene["classes"]:
+        click.echo(f"No Scene class found in {scene_file.name}")
+        sys.exit(1)
+
+    class_name = scene["classes"][0]
+    cmd = ["manim", f"-pq{quality}", str(scene_file), class_name]
+    click.echo(f"Previewing: {' '.join(cmd)}\n")
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        click.echo(f"\nPreview failed (exit {result.returncode}).")
+        sys.exit(result.returncode)
+
+
 # ── edit command ──────────────────────────────────────────────────────────
 
 
