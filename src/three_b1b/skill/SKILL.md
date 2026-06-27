@@ -86,6 +86,7 @@ Load the relevant rule file for the task at hand. Claude should read only what i
 
 ### Visual Design (read for any explainer video)
 - [rules/explanation-design.md](rules/explanation-design.md) -- **READ FIRST when deciding scene CONTENT.** Three principles for designing the explanation itself, from Grant Sanderson's "Designing Math" talk: ask "what does it look like?", give every symbol a motivation, motivate with the most surprising application. One object, several representations, one question each.
+- [rules/pedagogy-checklist.md](rules/pedagogy-checklist.md) -- A checklist for judging when an explanation is pedagogically done, not just rigorous, from Grant Sanderson's JMM 2023 award lecture and the SoME rubric: motivating example before each definition, rediscoverable proofs, concrete before abstract, a problem before instruction, raise the ceiling while lowering the floor.
 - [rules/visual-design-principles.md](rules/visual-design-principles.md) -- **17 core principles** from Tufte, Bret Victor, 3Blue1Brown: opacity layering, persistent context, geometry before algebra, question frames, concrete values, density ramp, monospace text
 - [rules/visual-design-catalog.md](rules/visual-design-catalog.md) -- **35 implementable patterns** from 3b1b frame analysis + production learnings: probability sidebars, skip arcs, grid fills, interactive sliders, heatmaps, live pipeline data flow, linked dual panels, camera zoom detail, and more
 
