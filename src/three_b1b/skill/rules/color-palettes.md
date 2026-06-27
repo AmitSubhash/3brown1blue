@@ -66,6 +66,51 @@ PALETTE_VIBRANT = {
 }
 ```
 
+### 3Blue1Brown entity-color binding (the discipline behind the look)
+
+Frame analysis of Grant Sanderson's "Designing Math" (Config 2026) shows the rule that makes
+the style legible: bind ONE color to a math entity and use that same color for BOTH the symbol
+AND its geometric avatar. pi is the same red as the half-circle arc; i is the same teal
+wherever it appears; the real part is yellow as a symbol and as the horizontal leg of the
+vector; the imaginary part is magenta as a symbol and as the vertical leg. The viewer reads
+geometry and algebra as one object because the color is shared.
+
+```python
+# Entity colors. Reuse the SAME constant for the symbol and its picture.
+PI_COLOR        = "#FC6255"   # pi, and the arc it traces                     (3b1b red)
+I_COLOR         = "#3FB4C9"   # i / variable z, and the rotate-90 action      (teal)
+REAL_COLOR      = "#F9E04C"   # real part a, and the horizontal component     (yellow)
+IMAG_COLOR      = "#E15FCB"   # imaginary part b*i / variable w, vertical leg (magenta)
+PATH_COLOR      = "#83C167"   # motion / series vectors / velocity            (green)
+POSITION_COLOR  = "#3FB4C9"   # position vectors                              (teal)
+ACTIVE_COLOR    = "#F9E04C"   # active term, current point, swept parameter   (yellow + glow)
+GRID_COLOR      = "#3C5A6E"   # background grid (low opacity)
+AXIS_COLOR      = WHITE       # axes and numeric labels (kept low-emphasis)
+```
+
+Two habits that come with the binding:
+
+1. Mark the active point with a glowing dot (a Dot plus a faint larger Dot behind it), so the
+   eye always knows where "now" is.
+
+```python
+def glow_dot(point, color=ACTIVE_COLOR):
+    glow = Dot(point, radius=0.18, color=color).set_opacity(0.25)
+    core = Dot(point, radius=0.06, color=color)
+    return VGroup(glow, core)
+```
+
+2. Color a swept parameter readout in that parameter's own color, next to the action, so the
+   number and the motion are obviously the same thing.
+
+```python
+t = ValueTracker(0.0)
+readout = always_redraw(lambda: MathTex(
+    rf"t = {t.get_value():.2f}", color=PATH_COLOR, font_size=36
+).to_corner(UL))
+```
+
+
 ### Colorblind-safe (deuteranopia-friendly)
 
 Best for: any public-facing content. Uses blue-orange instead of red-green.

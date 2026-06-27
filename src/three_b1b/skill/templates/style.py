@@ -4,6 +4,9 @@ Copy this file to your project's utils/style.py and customize the palette.
 Import in every scene file: from utils.style import *
 """
 
+# Manim's API is used via `from manim import *`, the framework's standard idiom.
+# ruff: noqa: F403, F405
+
 from manim import *
 
 # ── Color Palette ────────────────────────────────────────────────
@@ -141,3 +144,70 @@ def story_bridge(scene: Scene, text: str) -> None:
     scene.play(FadeIn(bridge, shift=UP * 0.3))
     scene.wait(HOLD_MEDIUM)
     scene.play(FadeOut(bridge, shift=UP * 0.3))
+
+
+# ── 3Blue1Brown entity-color binding ────────────────────────────
+# Bind ONE color to a math entity, reuse it for the symbol AND its
+# geometric avatar (pi is the same red as the arc it traces).
+# See rules/color-palettes.md and rules/explanation-design.md.
+ENTITY = {
+    "pi": "#FC6255",  # pi, and the arc it traces
+    "i": "#3FB4C9",  # i / variable z, the rotate-90 action
+    "real": "#F9E04C",  # real part, horizontal component
+    "imag": "#E15FCB",  # imaginary part, vertical component
+    "path": "#83C167",  # motion / series / velocity vectors
+    "position": "#3FB4C9",  # position vectors
+    "active": "#F9E04C",  # active term, current point, swept parameter
+    "grid": "#3C5A6E",  # background grid (low opacity)
+}
+
+
+def glow_dot(
+    point, color: ManimColor | str = ENTITY["active"], radius: float = 0.06
+) -> VGroup:
+    """Active-point marker: a small core dot over a faint larger glow."""
+    glow = Dot(point, radius=radius * 3, color=color).set_opacity(0.25)
+    core = Dot(point, radius=radius, color=color)
+    return VGroup(glow, core)
+
+
+def role_annotation(
+    part: Mobject,
+    role: str,
+    color: ManimColor | str = ENTITY["active"],
+    side=DOWN,
+    font_size: int = LABEL_SIZE,
+) -> VGroup:
+    """Box a sub-expression in its color and label what it DOES.
+
+    The visual form of "give your characters motivation": box e^{it} and
+    label it "Position", box i and label it "Rotate 90". Recolors the part
+    to match. Returns VGroup(box, label); play Create/FadeIn on it.
+    """
+    part.set_color(color)
+    box = SurroundingRectangle(part, color=color, buff=0.08)
+    label = Text(role, font_size=font_size, color=color).next_to(box, side, buff=0.15)
+    return VGroup(box, label)
+
+
+def vector_walk(points, to_point, color: ManimColor | str = ENTITY["path"]) -> VGroup:
+    """Tip-to-tail arrows through a sequence of partial sums (a series as motion).
+
+    points: ordered list of values (e.g. complex partial sums).
+    to_point: a mapper from value to a scene coordinate, e.g. plane.n2p.
+    Returns a VGroup of arrows; reveal with LaggedStart(GrowArrow, ...).
+    """
+    coords = [to_point(p) for p in points]
+    return VGroup(
+        *[
+            Arrow(
+                coords[k - 1],
+                coords[k],
+                buff=0,
+                color=color,
+                stroke_width=4,
+                max_tip_length_to_length_ratio=0.25,
+            )
+            for k in range(1, len(coords))
+        ]
+    )

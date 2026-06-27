@@ -1,12 +1,13 @@
 ---
 name: Visual Design Pattern Catalog
-description: 22 concrete visualization patterns from 3Blue1Brown frame analysis -- implementable recipes for Manim scenes
+description: 35 concrete visualization patterns from 3Blue1Brown frame analysis -- implementable recipes for Manim scenes
 tags: [manim, patterns, 3b1b, catalog, visualization, recipes]
 ---
 
 # Visual Design Pattern Catalog
 
-422 frames analyzed across 3 videos (NN Ch2, Transformer Ch6, MLP Ch8).
+Patterns 1 to 26 from 422 frames across 3 videos (NN Ch2, Transformer Ch6, MLP Ch8).
+Patterns 27 to 35 from Grant Sanderson's talk "Designing Math" (Config 2026).
 Each pattern: name, description, one code snippet.
 
 ---
@@ -371,6 +372,187 @@ class ZoomDetail(MovingCameraScene):
         )
 ```
 
+## Transformation and Explanation Patterns
+
+From frame analysis of Grant Sanderson's "Designing Math" (Config 2026). These render the
+ideas in explanation-design.md: showing a symbol's job, a series as motion, and a function as
+a warping of the whole plane.
+
+### 27. Role-Labeled Equation Boxes
+
+Box every part of an equation at once, each in its semantic color, and label what each part
+DOES in plain language. This is the visual form of "give your characters motivation": the
+viewer reads the equation as a cast of actors with jobs, not as inert symbols. In the talk,
+d/dt e^{it} = i * e^{it} is annotated as Velocity = (Rotate 90 degrees) * (Position).
+
+```python
+eq = MathTex(r"\frac{d}{dt} e^{it}", r"=", r"i", r"\cdot", r"e^{it}")
+roles = [(0, "Velocity", YELLOW, DOWN), (2, "Rotate 90", YELLOW, UP), (4, "Position", TEAL, DOWN)]
+for idx, text, color, side in roles:
+    box = SurroundingRectangle(eq[idx], color=color, buff=0.08)
+    label = Text(text, font_size=24, color=color).next_to(box, side, buff=0.15)
+    eq[idx].set_color(color)
+    self.play(Create(box), FadeIn(label, shift=side * 0.2))
+```
+
+### 28. Tip-to-Tail Vector Walk (series as a spiral)
+
+Show a sum or series geometrically: lay each term as an arrow, tip to tail, so the running
+total traces a path. For e^{i*pi} the terms spiral inward (factorial denominators shrink them)
+and converge on -1, making "what does this sum look like?" literally visible. Color the path
+green and label the active term in yellow.
+
+```python
+import math
+plane = ComplexPlane(x_range=[-2, 2], y_range=[-1, 4]).add_coordinates()
+partials = []
+total = 0
+for n in range(12):
+    total += (1j * math.pi) ** n / math.factorial(n)
+    partials.append(total)
+arrows = VGroup(*[
+    Arrow(plane.n2p(partials[k - 1]), plane.n2p(partials[k]),
+          buff=0, color=GREEN, stroke_width=4, max_tip_length_to_length_ratio=0.2)
+    for k in range(1, len(partials))
+])
+self.play(LaggedStart(*[GrowArrow(a) for a in arrows], lag_ratio=0.4, run_time=6))
+self.play(FadeIn(Dot(plane.n2p(-1), color=YELLOW, radius=0.08)))
+```
+
+### 29. Vector Field Reveals the Rule
+
+When an object is defined by "velocity is some transform of position," draw the field: at
+sampled points show the position vector (teal) and the velocity vector (green) as that
+transform of it. The resulting motion becomes inevitable from the picture alone. Here velocity
+is a 90-degree rotation of position, so every velocity is tangent to a circle.
+
+```python
+plane = NumberPlane(x_range=[-3, 3], y_range=[-2, 2])
+field = VGroup()
+for ang in np.linspace(0, TAU, 12, endpoint=False):
+    pos = np.array([np.cos(ang), np.sin(ang), 0])
+    vel = np.array([-pos[1], pos[0], 0])  # multiply by i = rotate 90 degrees
+    field.add(Arrow(plane.c2p(0, 0), plane.c2p(*pos[:2]), buff=0, color=TEAL, stroke_width=3))
+    field.add(Arrow(plane.c2p(*pos[:2]), plane.c2p(*(pos + vel)[:2]), buff=0,
+                    color=GREEN, stroke_width=3))
+self.play(LaggedStart(*[GrowArrow(a) for a in field], lag_ratio=0.05))
+```
+
+### 30. Tracer Lines Through a Transformation
+
+To show "what does this function do to the whole plane," do not warp a bare grid: warp a
+TEXTURED plane (checkerboard or colored grid) and highlight a few tracer lines in distinct
+colors so the eye can follow where they go. In the talk, e^z turns yellow vertical lines into
+concentric orange circles.
+
+```python
+grid = NumberPlane(x_range=[-3, 3], y_range=[-3, 3], background_line_style={"stroke_opacity": 0.3})
+tracers = VGroup(*[
+    Line(grid.c2p(x, -3), grid.c2p(x, 3), color=c, stroke_width=4)
+    for x, c in [(-1, YELLOW), (0, ORANGE), (1, RED)]
+])
+self.add(grid, tracers)
+self.play(grid.animate.apply_complex_function(lambda z: np.exp(z)),
+          tracers.animate.apply_complex_function(lambda z: np.exp(z)), run_time=4)
+```
+
+### 31. Image on the Complex Plane
+
+Ground an abstract transformation in a real artifact: place a full-bleed reference image, then
+overlay coordinate axes (low-opacity cyan) to reframe it as living on the complex plane. The
+viewer accepts "this picture is a function on C," which licenses transforming it (log, rotate,
+exponentiate). Pi-creature or any recurring mascot can sit inside the world as an anchor.
+
+```python
+art = ImageMobject("escher_print_gallery.png").scale_to_fit_height(6)
+axes = ComplexPlane(
+    x_range=[-3, 3], y_range=[-3, 3],
+    background_line_style={"stroke_color": TEAL, "stroke_opacity": 0.25},
+).scale_to_fit_height(6).move_to(art)
+self.play(FadeIn(art))
+self.play(Create(axes))  # now the image "is" a region of C
+```
+
+### 32. Inverse-Function Two-Panel
+
+Teach a function and its inverse as one figure: two panels with bidirectional labeled arrows,
+one going forward and one coming back, variables color-coded (z to e^z forward, ln(w) back
+from w). Makes "these undo each other" structural rather than asserted.
+
+```python
+left = make_panel("log space").to_edge(LEFT)
+right = make_panel("exp space").to_edge(RIGHT)
+fwd = Arrow(left.get_right(), right.get_left(), buff=0.4).shift(UP * 0.6)
+bwd = Arrow(right.get_left(), left.get_right(), buff=0.4).shift(DOWN * 0.6)
+fwd_lbl = MathTex(r"z \to e^{z}").next_to(fwd, UP, buff=0.1)
+bwd_lbl = MathTex(r"\ln(", "w", r") \leftarrow", "w").next_to(bwd, DOWN, buff=0.1)
+bwd_lbl.set_color_by_tex("w", PINK)
+self.play(GrowArrow(fwd), Write(fwd_lbl)); self.play(GrowArrow(bwd), Write(bwd_lbl))
+```
+
+### 33. Commutative-Diagram Transform Grid
+
+For a multi-step recipe, lay the stages on a grid and connect them with labeled arrows so the
+whole pipeline reads at a glance. The talk shows the Escher construction as a 2x2: straighten,
+take the log, rotate, exponentiate, with each edge labeled. Different from the Four-Quadrant
+Summary (13): this is a process with directed edges, not a static recap.
+
+```python
+cells = {
+    "tl": panel("log").to_corner(UL), "tr": panel("straight").to_corner(UR),
+    "bl": panel("rotated").to_corner(DL), "br": panel("escher").to_corner(DR),
+}
+edges = [
+    (cells["tr"], cells["tl"], MathTex(r"\ln(w) \leftarrow w"), UP),
+    (cells["tl"], cells["bl"], Text("Rotate"), LEFT),
+    (cells["bl"], cells["br"], MathTex(r"z \to e^{z}"), DOWN),
+]
+for a, b, lbl, side in edges:
+    arr = Arrow(a.get_edge_center(side), b.get_edge_center(-side), buff=0.2)
+    self.play(GrowArrow(arr), FadeIn(lbl.next_to(arr, side, buff=0.1)))
+```
+
+### 34. North-Star Goal Box with Live Value Readout
+
+Keep the destination claim boxed in a corner for the WHOLE derivation (e^{iπ} = -1 sits
+top-right while the circular motion plays out), and show the actual computed value next to the
+moving point as the parameter advances (e^{i·3.14} = -1.00 + 0.00i). The viewer always sees
+both where they are headed and where they are right now, which makes the moment of arrival land.
+
+```python
+goal = MathTex(r"e^{i\pi} = -1").to_corner(UR)
+self.add(goal, SurroundingRectangle(goal, color=WHITE, buff=0.15))
+
+t = ValueTracker(0.0)
+def fmt(z):
+    return f"{z.real:.2f} {'+' if z.imag >= 0 else '-'} {abs(z.imag):.2f}i"
+readout = always_redraw(lambda: MathTex(
+    rf"e^{{i\cdot {t.get_value():.2f}}} = " + fmt(np.exp(1j * t.get_value())),
+    color=TEAL, font_size=32,
+).next_to(plane.n2p(np.exp(1j * t.get_value())), UR, buff=0.15))
+self.add(readout)
+self.play(t.animate.set_value(PI), run_time=4)
+```
+
+### 35. Self-Driving System (velocity locked to position)
+
+For an object defined by "velocity is a function of position," draw position and velocity as
+adjacent tip-to-tail arrows on the SAME axis so "velocity equals position" reads as a visible
+length match, then sweep a tracker so the system drives itself. Runaway growth and decay become
+felt, not asserted. (Pair with pattern 29 for the 2D rotational case; color field arrows by
+phase for a richer look.)
+
+```python
+line = NumberLine(x_range=[0, 9], length=11)
+s = ValueTracker(1.0)  # position = e^t
+pos_arrow = always_redraw(lambda: Arrow(
+    line.n2p(0), line.n2p(s.get_value()), buff=0, color=TEAL, stroke_width=5))
+vel_arrow = always_redraw(lambda: Arrow(  # drawn from position's tip; its length = position
+    line.n2p(s.get_value()), line.n2p(2 * s.get_value()), buff=0, color=GREEN, stroke_width=5))
+self.add(line, pos_arrow, vel_arrow)
+self.play(s.animate.set_value(8), run_time=4, rate_func=rate_functions.ease_in_cubic)
+```
+
 ---
 
 ## Quick Reference
@@ -403,3 +585,12 @@ class ZoomDetail(MovingCameraScene):
 | 24 | Linked Dual Panel              | Dynamic Data  |
 | 25 | Heatmap Grid                   | Dynamic Data  |
 | 26 | Camera Zoom Detail             | Dynamic Data  |
+| 27 | Role-Labeled Equation Boxes    | Transformation |
+| 28 | Tip-to-Tail Vector Walk        | Transformation |
+| 29 | Vector Field Reveals the Rule  | Transformation |
+| 30 | Tracer Lines Through Transform | Transformation |
+| 31 | Image on the Complex Plane     | Transformation |
+| 32 | Inverse-Function Two-Panel     | Transformation |
+| 33 | Commutative-Diagram Grid       | Transformation |
+| 34 | North-Star Goal Box + Readout  | Transformation |
+| 35 | Self-Driving System            | Transformation |
